@@ -29,5 +29,3 @@ def retry_with_backoff(operation, retries, base_delay):
                 time.sleep(delay)
 
     raise last_error
-
-
