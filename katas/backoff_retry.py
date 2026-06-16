@@ -21,7 +21,16 @@ def retry_with_backoff(operation, retries, base_delay):
     Raises:
         Exception: re-raises the last exception if all retries are exhausted
     """
-    raise NotImplementedError("retry_with_backoff not implemented.")
+    for attempt in range(retries + 1):
+        try:
+            return operation()
+
+        except Exception:
+            if attempt == retries:
+                raise
+
+            delay = base_delay * (2 ** attempt)
+            time.sleep(delay)
 
 
 if __name__ == '__main__':
