@@ -31,18 +31,3 @@ def retry_with_backoff(operation, retries, base_delay):
     raise last_error
 
 
-if __name__ == "__main__":
-    demo_attempt = 0
-
-    def flaky():
-        """Fail twice, then return ok."""
-        global demo_attempt  # pylint: disable=global-statement
-        demo_attempt += 1
-
-        if demo_attempt < 3:
-            raise ConnectionError("Service unavailable")
-
-        return "ok"
-
-    demo_result = retry_with_backoff(flaky, retries=3, base_delay=1.0)
-    print(demo_result)
