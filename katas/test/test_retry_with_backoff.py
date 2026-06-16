@@ -1,42 +1,41 @@
-from unittest.mock import Mock
+import unittest
+from unittest.mock import Mock, patch
 
-import pytest
-
-from katas.retry_with_backoff import retry_with_backoff
-
-
-def test_success_on_first_attempt(mocker):
-    operation = Mock(return_value="ok")
-    mock_sleep = mocker.patch("time.sleep")
-
-    result = retry_with_backoff(operation, retries=3, base_delay=1)
-
-    assert result == "ok"
-    assert operation.call_count == 1
-    mock_sleep.assert_not_called()
+from backoff_retry import retry_with_backoff
 
 
-def test_succeeds_after_retries(mocker):
-    operation = Mock(side_effect=[
-        ConnectionError(),
-        ConnectionError(),
-        "ok",
-    ])
-    mock_sleep = mocker.patch("time.sleep")
+class TestRetryWithBackoff(unittest.TestCase):
 
-    result = retry_with_backoff(operation, retries=3, base_delay=1)
+    @patch("time.sleep")
+    def test_success_on_first_attempt(self, mock_sleep):
+        operation = Mock(return_value="ok")
 
-    assert result == "ok"
-    assert operation.call_count == 3
-    mock_sleep.assert_any_call(1)
-    mock_sleep.assert_any_call(2)
+        result = retry_with_backoff(operation, retries=3, base_delay=1)
 
+        self.assertEqual(result, "ok")
+        self.assertEqual(operation.call_count, 1)
+        mock_sleep.assert_not_called()
 
-def test_raises_after_all_retries_exhausted(mocker):
-    operation = Mock(side_effect=ConnectionError("Service unavailable"))
-    mocker.patch("time.sleep")
+    @patch("time.sleep")
+    def test_succeeds_after_retries(self, mock_sleep):
+        operation = Mock(side_effect=[
+            ConnectionError(),
+            ConnectionError(),
+            "ok",
+        ])
 
-    with pytest.raises(ConnectionError):
-        retry_with_backoff(operation, retries=2, base_delay=1)
+        result = retry_with_backoff(operation, retries=3, base_delay=1)
 
-    assert operation.call_count == 3
+        self.assertEqual(result, "ok")
+        self.assertEqual(operation.call_count, 3)
+        mock_sleep.assert_any_call(1)
+        mock_sleep.assert_any_call(2)
+
+    @patch("time.sleep")
+    def test_raises_after_all_retries_exhausted(self, mock_sleep):
+        operation = Mock(side_effect=ConnectionError("Service unavailable"))
+
+        with self.assertRaises(ConnectionError):
+            retry_with_backoff(operation, retries=2, base_delay=1)
+
+        self.assertEqual(operation.call_count, 3)
